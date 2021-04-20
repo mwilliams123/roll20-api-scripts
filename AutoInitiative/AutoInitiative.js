@@ -7,7 +7,6 @@
 
 const AutoInitiative = (() => {
 
-    const stateName = 'AUTO_INITIATIVE';
     const scriptName = 'AutoInitiative';
     const commandName = '!autoinit';
     const tokenMarkers = ['blue', 'brown', 'green', 'red', 'yellow', 'purple', 'pink'];
@@ -124,9 +123,9 @@ const AutoInitiative = (() => {
             return;
         } 
         // store variable in state
-        state[stateName][option[0]] = option[1] === 'true';
+        state[scriptName][option[0]] = option[1] === 'true';
         // Send confirmation to chat
-        sendChat('AutoInitiative', '/w gm ' + desc + (state[stateName][option[0]] ? " Enabled" : " Disabled"), null, {noarchive:true});
+        sendChat('AutoInitiative', '/w gm ' + desc + (state[scriptName][option[0]] ? " Enabled" : " Disabled"), null, {noarchive:true});
     }
     
     /**
@@ -141,7 +140,7 @@ const AutoInitiative = (() => {
             return;
         } 
         if (option[1] === 'none') {
-            state[stateName].max_per_group = null;
+            state[scriptName].max_per_group = null;
             sendChat('AutoInitiative', '/w gm Disabled Max Per Group limit ', null, {noarchive:true});
             return;
         }
@@ -151,7 +150,7 @@ const AutoInitiative = (() => {
             return;
         }
         // store variable in state
-        state[stateName].max_per_group = num;
+        state[scriptName].max_per_group = num;
         // Send confirmation to chat
         sendChat('AutoInitiative', '/w gm Set Max Per Group to ' + num, null, {noarchive:true});
     }
@@ -165,7 +164,7 @@ const AutoInitiative = (() => {
      * @listens event:change:campaign:initiativepage
      */
     const handleInitiativeOpen = function(obj, prev){
-        if (!state[stateName].enable) {
+        if (!state[scriptName].enable) {
             return;
         }
         
@@ -183,7 +182,7 @@ const AutoInitiative = (() => {
         let tokens = findObjs({_pageid: currPage, _type: "graphic"});
         tokens = tokens.filter((token) => {
             const character = getObj('character', token.get('represents')); 
-            return (character && (state[stateName].players || !isPlayer(character.get('controlledby'))));
+            return (character && (state[scriptName].players || !isPlayer(character.get('controlledby'))));
         });
         
         // group tokens and roll initiative for one member of each group
@@ -193,7 +192,7 @@ const AutoInitiative = (() => {
         }
         
         // add rolls that aren't output to chat to turnorder
-        if (!state[stateName].output) {
+        if (!state[scriptName].output) {
             setTurnOrder(turnOrder);
         }
     };
@@ -215,7 +214,7 @@ const AutoInitiative = (() => {
         // NOTE: tokens representing the same character with different names will NOT be grouped together.
         for (const token of tokens) {
             const uniqueId = token.get("name") + token.get('represents');
-            if (!state[stateName].group) { // each token gets own group
+            if (!state[scriptName].group) { // each token gets own group
                 tokensByType[token.id] = [token];
             }
             else if (tokensByType[uniqueId]) {
@@ -224,7 +223,7 @@ const AutoInitiative = (() => {
                 tokensByType[uniqueId] = [token];
             }
         }
-        if (!state[stateName].max_per_group || !state[stateName].group) {
+        if (!state[scriptName].max_per_group || !state[scriptName].group) {
             return tokensByType;
         }
         // break down into smaller groups and assign markers, if necessary
@@ -233,11 +232,11 @@ const AutoInitiative = (() => {
         for (const key in tokensByType) {
             const tokenGroup = tokensByType[key];
             // check # tokens in group does not exceed limit
-            if (tokenGroup.length <= state[stateName].max_per_group) {
+            if (tokenGroup.length <= state[scriptName].max_per_group) {
                 groups[key] = tokenGroup;
             } else {
                 // calculate # subgroups needed for token group
-                const numSplits = Math.ceil(tokenGroup.length / state[stateName].max_per_group);
+                const numSplits = Math.ceil(tokenGroup.length / state[scriptName].max_per_group);
                 // evenly distribute tokens into subgroups
                 for (let i = 0; i < tokenGroup.length; i++) {
                     let groupNum = i%numSplits;
@@ -308,7 +307,7 @@ const AutoInitiative = (() => {
      */
     const rollInitiative = function(token, turnOrder) {
         const character = getObj('character', token.get('represents')); 
-        if (state[stateName].output) {
+        if (state[scriptName].output) {
             // send initiative rolls to chat with additional page and tokenId parameters to be used in addToTurnOrder.
             const name = character.get("name");
             const message = `&{template:npc} {{name=${name}}} {{page=${token.pageid}}} {{tokenId=${token.id}}} {{rname=^{init}}} {{r1=[[1d20+[[@{${name}|initiative_bonus}]][DEX] ]]}} {{normal=1}} {{type=Initiative}}`;
@@ -371,12 +370,12 @@ const AutoInitiative = (() => {
         let config = '<h3>Actions</h3>'
         config += makeAction('Recover Last Turnorder', "--recover", "Recover");
         config += makeAction('Clear color markers', "--clear", "Clear");
-        config += makeAction('Disable/Enable AutoInitiative', `--enable ${state[stateName].enable ? 'false' : 'true'}`, state[stateName].enable ? 'Disable' : 'Enable');
+        config += makeAction('Disable/Enable AutoInitiative', `--enable ${state[scriptName].enable ? 'false' : 'true'}`, state[scriptName].enable ? 'Disable' : 'Enable');
         config += '<h3>Options</h3>';
-        config += makeOption('Group Monsters', state[stateName].group, 'group');
-        config += makeOption('Send to Chat', state[stateName].output, 'output');
-        config += makeOption('Roll for Players', state[stateName].players, 'players'); 
-        config += `<div style="height: 30px;"><span style="line-height: 30px;">Max tokens per group</span><a style="float: right;" href="${commandName} --max ?{Enter number or 'none' to disable|none}">${state[stateName].max_per_group ? state[stateName].max_per_group  : 'none' }</a></div>`;
+        config += makeOption('Group Monsters', state[scriptName].group, 'group');
+        config += makeOption('Send to Chat', state[scriptName].output, 'output');
+        config += makeOption('Roll for Players', state[scriptName].players, 'players'); 
+        config += `<div style="height: 30px;"><span style="line-height: 30px;">Max tokens per group</span><a style="float: right;" href="${commandName} --max ?{Enter number or 'none' to disable|none}">${state[scriptName].max_per_group ? state[scriptName].max_per_group  : 'none' }</a></div>`;
         sendChat('AutoInitiative', '/w gm ' + config);
     };
     
@@ -418,12 +417,12 @@ const AutoInitiative = (() => {
     };
     
     on('ready',function() {
-        if (!state[stateName]) {
-            state[stateName] = {
+        if (!state[scriptName]) {
+            state[scriptName] = {
                 'group': false,
                 'output': false,
                 'players': false,
-                'enable': false,
+                'enable': true,
                 'max_per_group': null,
             }
         }
